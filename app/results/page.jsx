@@ -1,56 +1,39 @@
-"use client";
-
-import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import axios from 'axios';
 
-export default function ResultsPage() {
-  const searchParams = useSearchParams();
-  const query = searchParams.get('query');
-  const type = searchParams.get('type') || 'restaurants'; // Default to 'restaurants'
+export default async function ResultsPage({ searchParams }) {
+  const query = searchParams.query;
+  const type = searchParams.type || 'restaurants'; // Default to 'restaurants'
 
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const APIKEY = process.env.NEXT_PUBLIC_API_KEY;
 
-  useEffect(() => {
-    async function fetchResults() {
-      if (!query) {
-        setLoading(false);
-        return;
-      }
+  let results = [];
+  let error = null;
 
-      try {
-        const endpoint = 'https://api.yelp.com/v3/businesses/search';
+  if (query) {
+    try {
+      const endpoint = 'https://api.yelp.com/v3/businesses/search';
 
-        const response = await axios.get(endpoint, {
-          headers: {
-            Authorization: `Bearer ${APIKEY}`,
-          },
-          params: {
-            term: type,
-            location: query,
-            limit: 15,
-          },
-        });
+      const response = await axios.get(endpoint, {
+        headers: {
+          Authorization: `Bearer ${APIKEY}`,
+        },
+        params: {
+          term: type,
+          location: query,
+          limit: 15,
+        },
+      });
 
-        console.log("Data has been fetched", response.data);
-        setResults(response.data.businesses || []);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setError("There has been an error fetching data.");
-        setLoading(false);
-      }
+      results = response.data.businesses || [];
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      error = "There has been an error fetching data.";
     }
+  }
 
-    fetchResults();
-  }, [query, type, APIKEY]);
-
-  if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!results || results.length === 0) return <div>No results found.</div>;
+
   return (
     <div className="p-5">
       <h1 className="text-4xl font-bold mb-4">Results for {query}</h1>
